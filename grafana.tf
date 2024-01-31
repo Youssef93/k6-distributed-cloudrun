@@ -94,7 +94,7 @@ resource "google_cloud_run_service" "grafana" {
     }
     metadata {
       annotations = {
-        "autoscaling.knative.dev/minScale" = 1,
+        "autoscaling.knative.dev/minScale" = 0,
         # max should be one only as grafana is using internal sqlite
         # if we need more insatnces then we need to provide an external db to grafana
         "autoscaling.knative.dev/maxScale" = 1
