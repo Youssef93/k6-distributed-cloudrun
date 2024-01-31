@@ -22,6 +22,7 @@ variable "grafana-port" {
 variable "DATABASE_USER" {
   type        = string
   description = "Database user"
+  default     = "postgres"
 }
 
 variable "DATABASE_PASSWORD" {
