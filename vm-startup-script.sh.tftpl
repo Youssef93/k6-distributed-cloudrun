@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+STARTUP_VERSION=1
+STARTUP_MARK=/var/startup.script.$STARTUP_VERSION
+
+# Exit if this script has already ran
+if [[ -f $STARTUP_MARK ]]; then
+ exit 0
+fi
+
+# Install timescale db
+sudo apt install -y gnupg postgresql-common apt-transport-https lsb-release wget
+sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+sudo echo "deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb_release -c -s) main" | sudo tee /etc/apt/sources.list.d/timescaledb.list
+sudo wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | sudo apt-key add -
+sudo apt update
+sudo apt install -y timescaledb-2-postgresql-14
+
+# Default configuration
+sudo timescaledb-tune --quiet --yes
+
+# Create DB
+sudo -u postgres -H -- psql -c "CREATE DATABASE ${DATABASE_NAME};"
+
+# Restart database
+sudo service postgresql restart
+
+# Create EXTENSION
+sudo -u postgres -H -- psql -d ${DATABASE_NAME} -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+
+# Add listner
+sudo -u postgres -H -- psql -c "ALTER SYSTEM SET listen_addresses TO '*';"
+sudo -u postgres -H -- psql -c "SELECT pg_reload_conf();"
+
+# Add host of pg
+echo "host    all             all             0.0.0.0/0               md5" | sudo tee -a /etc/postgresql/14/main/pg_hba.conf >/dev/null
+
+# Reset password
+sudo -u postgres -H -- psql -c "ALTER user postgres WITH PASSWORD '${DATABASE_PASSWORD}';"
+
+# Restart PostgreSQL instance
+sudo service postgresql restart
+
+touch $STARTUP_MARK
+
+echo Done!!!
